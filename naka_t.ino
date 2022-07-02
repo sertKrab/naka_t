@@ -11,25 +11,24 @@ IBusBM ibus;
 #define carLED 13
 
 // Motor A Control Connections
-#define pwmRight 8
-#define in1Right 9
-#define in2Right 10
+#define pwmRight 6
+#define dirRight 7
+
+
 
 // Motor B Control Connections
 #define pwmLeft 4
-#define in1Left 5
-#define in2Left 6
+#define dirLeft 5
+
 
 #define rLinearMo 24
 #define lLinearMo 25
 
 // TB6612FNG Standby Pin
-#define stby 6
+#define stby 8
 
 #define INTERVAL_DIR_SPEED_CONTROL 50 //5วินาที
 #define INTERVAL_MODE_CONTROL 5 //7วินาที
-#define INTERVAL_MESSAGE3 11000 //11วินาที
-#define INTERVAL_MESSAGE4 13000 //13วินาที
 
 unsigned long time_dir_speed = 0;
 unsigned long time_mode_control = 0;
@@ -58,48 +57,15 @@ int controllerMode = 0;
 
 
 // Control Motor A
-void mControlRightMoter(int mspeed) {
-  /*
-    if (dir > 100 ) {
-      // Motor backward
-      Serial.print("R STOP ");
-      digitalWrite(in2Right, HIGH);
-      digitalWrite(in1Right, HIGH);
-      analogWrite(pwmRight, 255);
-      return;
-    }
-    // Determine direction
-    if (mspeed >= 0) {
-      // Motor forward
-      Serial.print("R forward ");
-      digitalWrite(in2Right, LOW);
-      digitalWrite(in1Right, HIGH);
-    } else {
-      // Motor backward
-      Serial.print("R backward ");
-      digitalWrite(in2Right, HIGH);
-      digitalWrite(in1Right, LOW);
-    }
-    int speedcontrol =  abs(mspeed);
-    if (speedcontrol < 20) {
-      speedcontrol = 0;
-    }
-    // Control motor
-    analogWrite(pwmRight, speedcontrol);
-    Serial.print(" mspeed ");
-    Serial.print(speedcontrol);
-  */
-  // Determine direction
+void mControlRightMoter(int mspeed) { 
   if (mspeed >= 0) {
     // Motor forward
     Serial.print("R forward ");
-    digitalWrite(in2Right, LOW);
-    digitalWrite(in1Right, HIGH);
+    digitalWrite(dirRight, LOW);
   } else {
     // Motor backward
     Serial.print("R backward ");
-    digitalWrite(in2Right, HIGH);
-    digitalWrite(in1Right, LOW);
+    digitalWrite(dirRight, HIGH);    
   }
   int speedcontrol =  abs(mspeed);
   if (speedcontrol < 20) {
@@ -107,56 +73,21 @@ void mControlRightMoter(int mspeed) {
   }
   // Control motor
   analogWrite(pwmRight, speedcontrol);
-  Serial.print(" mspeed ");
-  Serial.print(speedcontrol);
+//  Serial.print(" mspeed ");
+//  Serial.print(speedcontrol);
 }
 
 // Control Motor Left
 void mControlLeftMotor(int mspeed) {
-  /* if (dir < -100 ) {
-     // Motor backward
-     Serial.print("L Stop ");
-
-     digitalWrite(in1Left, HIGH);
-     digitalWrite(in2Left, HIGH);
-     analogWrite(pwmRight, 255);
-     return;
-    }
-
-    // Determine direction
-    if (mspeed >= -50) {
-     // Motor forward
-     digitalWrite(in1Left, LOW);
-     digitalWrite(in2Left, HIGH);
-     Serial.print("L forward ");
-     // Serial.print(rcCH2);
-    } else {
-     // Motor backward
-     Serial.print("L backward ");
-     digitalWrite(in1Left, HIGH);
-     digitalWrite(in2Left, LOW);
-    }
-
-    int speedcontrol =  abs(mspeed);
-    if (speedcontrol < 20) {
-     speedcontrol = 0;
-    }
-    // Control motor
-    analogWrite(pwmLeft, speedcontrol);
-    Serial.print(speedcontrol);
-  */
-  // Determine direction
   if (mspeed >= 0) {
-    // Motor forward
-    digitalWrite(in1Left, LOW);
-    digitalWrite(in2Left, HIGH);
+    // Motor forward     
+     digitalWrite(dirLeft, LOW);
     Serial.print("L forward ");
     // Serial.print(rcCH2);
   } else {
     // Motor backward
-    Serial.print("L backward ");
-    digitalWrite(in1Left, HIGH);
-    digitalWrite(in2Left, LOW);
+    Serial.print("L backward ");    
+    digitalWrite(dirLeft, HIGH);
   }
 
   int speedcontrol =  abs(mspeed);
@@ -165,15 +96,9 @@ void mControlLeftMotor(int mspeed) {
   }
   // Control motor
   analogWrite(pwmLeft, speedcontrol);
-  Serial.print(speedcontrol);
+ // Serial.print(speedcontrol);
 
 }
-
-
-
-
-
-
 
 int getControllerMode(int chMode) {
   if (chMode < 70 && chMode > -70) {
@@ -210,10 +135,8 @@ int controllerMotorBrake(int chMode, int rlDirection) {
   }
 
   Serial.print("controllerMotorBrake motor  speed ");
-  digitalWrite(in2Right, HIGH);
-  digitalWrite(in1Right, HIGH);
-  digitalWrite(in1Left, HIGH);
-  digitalWrite(in2Left, HIGH);
+  digitalWrite(dirRight, LOW);
+  digitalWrite(dirLeft, LOW);
   analogWrite(pwmLeft, rlDirection);
   analogWrite(pwmRight, rlDirection);
   Serial.print(rlDirection);
@@ -253,15 +176,8 @@ void controllerLinerMotorMode(int chMode, int rlDirection) {
     digitalWrite(lLinearMo, HIGH);
     Serial.print("down linear motor");
     return;
-
   }
-
-
 }
-
-
-
-
 void setup()
 {
 
@@ -275,12 +191,9 @@ void setup()
 
   pinMode(pwmRight, OUTPUT);
   pinMode(pwmLeft, OUTPUT);
-  pinMode(in1Right, OUTPUT);
-  pinMode(in2Right, OUTPUT);
-  pinMode(in1Left, OUTPUT);
-  pinMode(in2Left, OUTPUT);
+  pinMode(dirRight, OUTPUT);
+  pinMode(dirLeft, OUTPUT);
   pinMode(stby, OUTPUT);
-
   pinMode(rLinearMo, OUTPUT);
   pinMode(lLinearMo, OUTPUT);
 
@@ -309,14 +222,7 @@ void loop() {
 
     int controlMode = getControllerMode(rcCH3);
     controllerLinerMotorMode(controlMode, rcCH4);
-    int statusUpdate = controllerMotorBrake(controlMode, rcCH4);
-
-    if (statusUpdate == 1)
-    {
-      return;
-    }
-
-
+    //int statusUpdate = controllerMotorBrake(controlMode, rcCH4);
   }
 
   if (millis() - time_dir_speed > INTERVAL_DIR_SPEED_CONTROL) {
@@ -329,7 +235,7 @@ void loop() {
     mControlRightMoter(MotorRight);
 
   }
-  Serial.println(" end  ");
+  Serial.println("");
   // Get RC channel values  Read left right value
 
 
